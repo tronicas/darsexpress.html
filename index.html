@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>اپلیکیشن آزمون</title>
+<style>
+  :root {
+    --blue: #00a4ef;
+    --green: #7fba00;
+    --orange: #f65314;
+    --yellow: #ffbb00;
+    --bg: #f3f3f3;
+    --text: #333;
+  }
+  body {
+    margin: 0; font-family: 'Tahoma', sans-serif; background: var(--bg); color: var(--text);
+    display: flex; justify-content: center; align-items: center; height: 100vh;
+  }
+  #app {
+    width: 360px; background: white; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    overflow: hidden; position: relative; height: 480px;
+  }
+  .screen {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    padding: 30px 20px;
+    box-sizing: border-box;
+    transition: transform 0.6s ease, opacity 0.6s ease;
+    opacity: 0; pointer-events: none;
+    transform: translateX(100%);
+    display: flex; flex-direction: column;
+  }
+  .screen.active {
+    opacity: 1; pointer-events: auto;
+    transform: translateX(0);
+  }
+  .screen.exit-left {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  h2 {
+    margin-top: 0; margin-bottom: 20px;
+    color: var(--blue);
+    text-align: center;
+  }
+  .axon-btn {
+    background: var(--orange);
+    border: none;
+    padding: 15px 20px;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    border-radius: 8px;
+    width: 100%;
+    text-align: center;
+    position: relative;
+    user-select: none;
+  }
+  .axon-btn:focus {
+    outline: 2px solid var(--yellow);
+  }
+  .scrollable-selector {
+    max-height: 120px;
+    margin-top: 10px;
+    overflow-y: auto;
+    border: 1px solid var(--orange);
+    border-radius: 6px;
+    display: none;
+    background: white;
+  }
+  .scrollable-selector.active {
+    display: block;
+  }
+  .scrollable-selector div {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    user-select: none;
+  }
+  .scrollable-selector div:hover,
+  .scrollable-selector div.selected {
+    background: var(--orange);
+    color: white;
+  }
+  .next-btn {
+    margin-top: auto;
+    background: var(--green);
+    border: none;
+    padding: 14px 20px;
+    color: white;
+    font-size: 17px;
+    cursor: pointer;
+    border-radius: 8px;
+    width: 100%;
+  }
+  .next-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
+  /* Quiz Styles */
+  .question {
+    font-size: 20px;
+    margin-bottom: 20px;
+    color: var(--blue);
+    flex-shrink: 0;
+  }
+  .choices {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex-grow: 1;
+    overflow-y: auto;
+  }
+  .choice {
+    background: var(--yellow);
+    padding: 12px 15px;
+    border-radius: 7px;
+    cursor: pointer;
+    user-select: none;
+    font-size: 17px;
+    border: 2px solid transparent;
+    transition: border-color 0.3s;
+  }
+  .choice:hover {
+    border-color: var(--orange);
+  }
+  .choice.selected {
+    background: var(--orange);
+    color: white;
+  }
+  /* Timer */
+  #timer {
+    font-size: 18px;
+    text-align: center;
+    margin-bottom: 20px;
+    color: var(--green);
+    flex-shrink: 0;
+  }
+  /* Result */
+  #result {
+    text-align: center;
+    font-size: 20px;
+    color: var(--blue);
+    margin-top: 50px;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Screen 1: Select Grade -->
+  <section class="screen active" id="screen1">
+    <h2>کلاس خود را انتخاب کنید</h2>
+    <button class="axon-btn" id="grade-axon">کلاس خود را انتخاب کنید</button>
+    <div class="scrollable-selector" id="grade-selector">
+      <div data-value="6">کلاس ۶</div>
+      <div data-value="7">کلاس ۷</div>
+      <div data-value="8">کلاس ۸</div>
+      <div data-value="9">کلاس ۹</div>
+      <div data-value="10">کلاس ۱۰</div>
+      <div data-value="11">کلاس ۱۱</div>
+      <div data-value="12">کلاس ۱۲</div>
+    </div>
+    <button class="next-btn" id="next1" disabled>بعدی</button>
+  </section>
+
+  <!-- Screen 2: Select Subject -->
+  <section class="screen" id="screen2">
+    <h2>موضوع مورد نظر را انتخاب کنید</h2>
+    <button class="axon-btn" id="subject-axon">موضوع خود را انتخاب کنید</button>
+    <div class="scrollable-selector" id="subject-selector">
+      <div data-value="persian">فارسی</div>
+      <div data-value="arabic">عربی</div>
+      <div data-value="math">ریاضی</div>
+      <div data-value="science">علوم</div>
+    </div>
+    <button class="next-btn" id="next2" disabled>بعدی</button>
+  </section>
+
+  <!-- Screen 3: Select Session -->
+  <section class="screen" id="screen3">
+    <h2>جلسه را انتخاب کنید</h2>
+    <button class="axon-btn" id="session-axon">جلسه را انتخاب کنید</button>
+    <div class="scrollable-selector" id="session-selector">
+      <div data-value="1">جلسه ۱</div>
+      <div data-value="2">جلسه ۲</div>
+      <div data-value="3">جلسه ۳</div>
+      <div data-value="4">جلسه ۴</div>
+      <div data-value="5">جلسه ۵</div>
+      <div data-value="6">جلسه ۶</div>
+      <div data-value="7">جلسه ۷</div>
+      <div data-value="8">جلسه ۸</div>
+      <div data-value="9">جلسه ۹</div>
+      <div data-value="10">جلسه ۱۰</div>
+    </div>
+    <button class="next-btn" id="next3" disabled>شروع آزمون</button>
+  </section>
+
+  <!-- Screen 4: Quiz -->
+  <section class="screen" id="screen4">
+    <h2>آزمون شما</h2>
+    <div id="timer">زمان: 0 ثانیه</div>
+    <div id="question-container">
+      <div class="question" id="question-text"></div>
+      <div class="choices" id="choices-container"></div>
+    </div>
+  </section>
+
+  <!-- Screen 5: Result -->
+  <section class="screen" id="screen5">
+    <h2>نتیجه آزمون</h2>
+    <div id="result"></div>
+  </section>
+</div>
+
+<script>
+  const state = {
+    grade: null,
+    subject: null,
+    session: null,
+    currentQuestionIndex: 0,
+    answers: [],
+    startTime: null,
+    timerInterval: null,
+  };
+
+  const questionsDB = {
+    '9_math_1': [
+      {
+        question: "کدام عدد اول است؟",
+        choices: ["۴", "۷", "۹", "۱۲"],
+        answer: 1
+      },
+      {
+        question: "حاصل جمع ۵ و ۳ چند است؟",
+        choices: ["۶", "۸", "۷", "۹"],
+        answer: 1
+      },
+      {
+        question: "ریشه دوم ۱۶ چیست؟",
+        choices: ["۲", "۳", "۴", "۵"],
+        answer: 2
+      }
+    ]
+  };
+
+  const screens = {
+    screen1: document.getElementById('screen1'),
+    screen2: document.getElementById('screen2'),
+    screen3: document.getElementById('screen3'),
+    screen4: document.getElementById('screen4'),
+    screen5: document.getElementById('screen5'),
+  };
+
+  function switchScreen(from, to) {
+    if(from === to) return;
+    from.classList.add('exit-left');
+    from.classList.remove('active');
+    to.classList.add('active');
+    setTimeout(() => {
+      from.classList.remove('exit-left');
+    }, 600);
+  }
+
+  function setupAxon(axonBtn, selectorDiv, onSelect) {
+    axonBtn.addEventListener('click', () => {
+      selectorDiv.classList.toggle('active');
+    });
+    selectorDiv.querySelectorAll('div').forEach(item => {
+      item.addEventListener('click', () => {
+        selectorDiv.querySelectorAll('div').forEach(i => i.classList.remove('selected'));
+        item.classList.add('selected');
+        axonBtn.textContent = item.textContent;
+        selectorDiv.classList.remove('active');
+        onSelect(item.dataset.value);
+      });
+    });
+  }
+
+  // Screen 1
+  const gradeAxonBtn = document.getElementById('grade-axon');
+  const gradeSelector = document.getElementById('grade-selector');
+  const next1Btn = document.getElementById('next1');
+
+  setupAxon(gradeAxonBtn, gradeSelector, (value) => {
+    state.grade = value;
+    next1Btn.disabled = false;
+  });
+
+  next1Btn.addEventListener('click', () => {
+    if (!state.grade) return;
+    switchScreen(screens.screen1, screens.screen2);
+  });
+
+  // Screen 2
+  const subjectAxonBtn = document.getElementById('subject-axon');
+  const subjectSelector = document.getElementById('subject-selector');
+  const next2Btn = document.getElementById('next2');
+
+  setupAxon(subjectAxonBtn, subjectSelector, (value) => {
+    state.subject = value;
+    next2Btn.disabled = false;
+  });
+
+  next2Btn.addEventListener('click', () => {
+    if (!state.subject) return;
+    switchScreen(screens.screen2, screens.screen3);
+  });
+
+  // Screen 3
+  const sessionAxonBtn = document.getElementById('session-axon');
+  const sessionSelector = document.getElementById('session-selector');
+  const next3Btn = document.getElementById('next3');
+
+  setupAxon(sessionAxonBtn, sessionSelector, (value) => {
+    state.session = value;
+    next3Btn.disabled = false;
+  });
+
+  next3Btn.addEventListener('click', () => {
+    if (!state.session) return;
+    startQuiz();
+    switchScreen(screens.screen3, screens.screen4);
+  });
+
+  // Quiz logic
+  const questionText = document.getElementById('question-text');
+  const choicesContainer = document.getElementById('choices-container');
+  const timerEl = document.getElementById('timer');
+
+  function startQuiz() {
+    state.currentQuestionIndex = 0;
+    state.answers = [];
+    state.startTime = Date.now();
+    startTimer();
+    showQuestion();
+  }
+
+  function startTimer() {
+    timerEl.textContent = `زمان: 0 ثانیه`;
+    if (state.timerInterval) clearInterval(state.timerInterval);
+    state.timerInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+      timerEl.textContent = `زمان: ${elapsed} ثانیه`;
+    }, 1000);
+  }
+
+  function showQuestion() {
+    const key = `${state.grade}_${state.subject}_${state.session}`;
+    const questions = questionsDB[key];
+    if (!questions || state.currentQuestionIndex >= questions.length) {
+      endQuiz();
+      return;
+    }
+    const q = questions[state.currentQuestionIndex];
+    questionText.textContent = q.question;
+    choicesContainer.innerHTML = '';
+    q.choices.forEach((choice, i) => {
+      const div = document.createElement('div');
+      div.className = 'choice';
+      div.textContent = choice;
+      div.addEventListener('click', () => {
+        selectAnswer(i);
+      });
+      choicesContainer.appendChild(div);
+    });
+  }
+
+  function selectAnswer(index) {
+    state.answers[state.currentQuestionIndex] = index;
+    [...choicesContainer.children].forEach((c, i) => {
+      c.classList.toggle('selected', i === index);
+    });
+    setTimeout(() => {
+      state.currentQuestionIndex++;
+      showQuestion();
+    }, 600);
+  }
+
+  function endQuiz() {
+    clearInterval(state.timerInterval);
+    const key = `${state.grade}_${state.subject}_${state.session}`;
+    const questions = questionsDB[key];
+    let score = 0;
+    questions.forEach((q, i) => {
+      if (state.answers[i] === q.answer) score++;
+    });
+    const elapsedSeconds = Math.floor((Date.now() - state.startTime) / 1000);
+    screens.screen4.classList.remove('active');
+    screens.screen5.classList.add('active');
+    document.getElementById('result').innerHTML =
+      `شما در مدت زمان ${elapsedSeconds} ثانیه<br>نمره شما: ${score} از ${questions.length} است.`;
+  }
+</script>
+
+</body>
+</html>
