@@ -143,6 +143,24 @@
     color: var(--blue);
     margin-top: 50px;
   }
+  /* Time Selector */
+  .time-selector-label {
+    margin-top: 18px;
+    font-size: 16px;
+    color: var(--orange);
+    text-align: center;
+  }
+  #time-selector {
+    margin: 8px auto 0;
+    display: block;
+    width: 100%;
+    font-size: 16px;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid var(--orange);
+    background: #fff7e6;
+    color: var(--text);
+  }
 </style>
 </head>
 <body>
@@ -177,7 +195,7 @@
     <button class="next-btn" id="next2" disabled>بعدی</button>
   </section>
 
-  <!-- Screen 3: Select Session -->
+  <!-- Screen 3: Select Session and Time -->
   <section class="screen" id="screen3">
     <h2>جلسه را انتخاب کنید</h2>
     <button class="axon-btn" id="session-axon">جلسه را انتخاب کنید</button>
@@ -193,6 +211,14 @@
       <div data-value="9">جلسه ۹</div>
       <div data-value="10">جلسه ۱۰</div>
     </div>
+    <label class="time-selector-label" for="time-selector">زمان آزمون را انتخاب کنید</label>
+    <select id="time-selector">
+      <option value="30">30 ثانیه</option>
+      <option value="60" selected>60 ثانیه</option>
+      <option value="90">90 ثانیه</option>
+      <option value="120">120 ثانیه</option>
+      <option value="180">180 ثانیه</option>
+    </select>
     <button class="next-btn" id="next3" disabled>شروع آزمون</button>
   </section>
 
@@ -222,6 +248,9 @@
     answers: [],
     startTime: null,
     timerInterval: null,
+    quizTimeLimit: 60, // مقدار اولیه، توسط انتخاب کاربر تنظیم می‌شود
+    quizDeadline: null,
+    quizEnded: false,
   };
 
   const questionsDB = {
@@ -311,6 +340,7 @@
   const sessionAxonBtn = document.getElementById('session-axon');
   const sessionSelector = document.getElementById('session-selector');
   const next3Btn = document.getElementById('next3');
+  const timeSelector = document.getElementById('time-selector'); // NEW
 
   setupAxon(sessionAxonBtn, sessionSelector, (value) => {
     state.session = value;
@@ -319,6 +349,7 @@
 
   next3Btn.addEventListener('click', () => {
     if (!state.session) return;
+    state.quizTimeLimit = parseInt(timeSelector.value, 10); // Use the selected value
     startQuiz();
     switchScreen(screens.screen3, screens.screen4);
   });
@@ -332,20 +363,29 @@
     state.currentQuestionIndex = 0;
     state.answers = [];
     state.startTime = Date.now();
+    state.quizDeadline = state.startTime + state.quizTimeLimit * 1000;
+    state.quizEnded = false;
     startTimer();
     showQuestion();
   }
 
   function startTimer() {
-    timerEl.textContent = `زمان: 0 ثانیه`;
+    timerEl.textContent = `زمان: 0 ثانیه (مانده: ${state.quizTimeLimit} ثانیه)`;
     if (state.timerInterval) clearInterval(state.timerInterval);
     state.timerInterval = setInterval(() => {
       const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
-      timerEl.textContent = `زمان: ${elapsed} ثانیه`;
+      const remaining = Math.max(0, Math.ceil((state.quizDeadline - Date.now()) / 1000));
+      timerEl.textContent = `زمان: ${elapsed} ثانیه (مانده: ${remaining} ثانیه)`;
+      if (remaining <= 0) {
+        endQuiz();
+      }
     }, 1000);
   }
 
   function showQuestion() {
+    if (state.quizEnded) return;
+    const now = Date.now();
+    if (now >= state.quizDeadline) { endQuiz(); return; }
     const key = `${state.grade}_${state.subject}_${state.session}`;
     const questions = questionsDB[key];
     if (!questions || state.currentQuestionIndex >= questions.length) {
@@ -367,6 +407,7 @@
   }
 
   function selectAnswer(index) {
+    if (state.quizEnded) return;
     state.answers[state.currentQuestionIndex] = index;
     [...choicesContainer.children].forEach((c, i) => {
       c.classList.toggle('selected', i === index);
@@ -378,9 +419,11 @@
   }
 
   function endQuiz() {
+    if (state.quizEnded) return;
+    state.quizEnded = true;
     clearInterval(state.timerInterval);
     const key = `${state.grade}_${state.subject}_${state.session}`;
-    const questions = questionsDB[key];
+    const questions = questionsDB[key] || [];
     let score = 0;
     questions.forEach((q, i) => {
       if (state.answers[i] === q.answer) score++;
@@ -388,10 +431,12 @@
     const elapsedSeconds = Math.floor((Date.now() - state.startTime) / 1000);
     screens.screen4.classList.remove('active');
     screens.screen5.classList.add('active');
-    document.getElementById('result').innerHTML =
-      `شما در مدت زمان ${elapsedSeconds} ثانیه<br>نمره شما: ${score} از ${questions.length} است.`;
+    let msg = `شما در مدت زمان ${elapsedSeconds} ثانیه<br>نمره شما: ${score} از ${questions.length} است.`;
+    if (Date.now() >= state.quizDeadline) {
+      msg += `<br><span style="color:red;">زمان آزمون به پایان رسید!</span>`;
+    }
+    document.getElementById('result').innerHTML = msg;
   }
 </script>
-
 </body>
 </html>
